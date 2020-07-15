@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Pair Wiimote</string>
+    <string name="no_bluetooth">This device does not support bluetooth :(</string>
+    <string name="refresh">Refresh</string>
+    <string name="unnamed_device">&lt;unnamed device&gt;</string>
+    <string name="instructions">Instructions: Simultaneously press the 1 and 2 buttons on your Wii remote, then tap the corresponding entry (highlighted in green) in the list below.</string>
+</resources>
