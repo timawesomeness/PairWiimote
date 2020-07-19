@@ -16,6 +16,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -148,6 +149,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                 break;
             case R.id.wiimote:
                 controllerType = ControllerType.WIIMOTE;
+                ((TextView) findViewById(R.id.instructions)).setText(R.string.wiimote_instructions);
                 break;
             case R.id.wiiupro:
                 final EditText input = new EditText(this);
@@ -172,6 +174,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                             } else {
                                 localMAC = input.getText().toString();
                                 controllerType = ControllerType.WIIUPRO;
+                                ((TextView) findViewById(R.id.instructions)).setText(R.string.wiiupro_instructions);
                             }
                         })
                         .setNegativeButton(android.R.string.cancel, (dialogInterface, i) -> {

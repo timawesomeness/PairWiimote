@@ -9,7 +9,7 @@
     <string name="wiimote">Wii Remote</string>
     <string name="wiiupro">Wii U Pro Controller</string>
     <string name="local_mac_title">What is your device\'s Blueooth MAC address?</string>
-    <string name="local_mac_instructions">To see your device\'s Bluetooth MAC address, open Android settings > About phone</string>
+    <string name="local_mac_instructions">To see your device\'s Bluetooth MAC address, open Android settings > About device</string>
     <string name="local_mac_hint">aa:bb:cc:dd:ee:ff</string>
     <string name="local_mac_error">Please enter a valid MAC address</string>
 </resources>
