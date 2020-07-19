@@ -77,7 +77,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                     findViewById(R.id.progressBar).setVisibility(View.GONE);
                 }
             } else if (action.equals(BluetoothDevice.ACTION_PAIRING_REQUEST)) {
-                adapter.cancelDiscovery();
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 try {
                     byte[] pin = new byte[6];
@@ -101,9 +100,9 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) { // if we're pre-M, permissions are granted at install-time
             return;
         }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[] { Manifest.permission.ACCESS_COARSE_LOCATION }, 0);
+            requestPermissions(new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, 0);
         }
     }
 

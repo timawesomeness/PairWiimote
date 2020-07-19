@@ -1,7 +1,9 @@
 package com.timawesomeness.pairwiimote;
 
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -37,16 +39,21 @@ public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDevice
                 : device.getName());
         holder.bottom.setText(device.getAddress());
         holder.itemView.setOnClickListener(view -> {
+            BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
             device.createBond();
         });
         if (device.getName() != null && device.getName().contains("Nintendo RVL-")) {
-            holder.itemView.setBackgroundColor(Color.argb(25, 0, 255, 0));
+            holder.top.setTextColor(Color.rgb(0, 191, 0));
+            holder.top.setTypeface(null, Typeface.BOLD);
+        } else {
+            holder.top.setTextColor(holder.bottom.getTextColors());
+            holder.top.setTypeface(null, Typeface.NORMAL);
         }
     }
 
     @Override
     public int getItemCount() {
-        return data.size();
+        return size;
     }
 
     /**
