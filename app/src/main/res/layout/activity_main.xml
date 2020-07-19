@@ -20,13 +20,13 @@
         app:titleTextColor="@android:color/white" />
 
     <TextView
-        android:id="@+id/textView"
+        android:id="@+id/instructions"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="4dp"
         android:layout_marginTop="4dp"
         android:layout_marginEnd="4dp"
-        android:text="@string/instructions"
+        android:text="@string/wiimote_instructions"
         android:textColor="@android:color/primary_text_light"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -41,7 +41,7 @@
         android:indeterminate="true"
         app:layout_constraintEnd_toEndOf="@+id/list"
         app:layout_constraintStart_toStartOf="@+id/list"
-        app:layout_constraintTop_toBottomOf="@+id/textView" />
+        app:layout_constraintTop_toBottomOf="@+id/instructions" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/list"

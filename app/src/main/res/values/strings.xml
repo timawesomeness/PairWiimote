@@ -3,5 +3,13 @@
     <string name="no_bluetooth">This device does not support bluetooth :(</string>
     <string name="refresh">Refresh</string>
     <string name="unnamed_device">&lt;unnamed device&gt;</string>
-    <string name="instructions">Instructions: Simultaneously press the 1 and 2 buttons on your Wii remote, then tap the corresponding entry (highlighted in green) in the list below.</string>
+    <string name="wiimote_instructions">Instructions: Simultaneously press the 1 and 2 buttons on your Wii remote, then tap the corresponding entry (highlighted in green) in the list below.</string>
+    <string name="wiiupro_instructions">Instructions: Press the sync button on the back of your controller, then tap the corresponding entry in the list below.</string>
+    <string name="controller">Type of controller</string>
+    <string name="wiimote">Wii Remote</string>
+    <string name="wiiupro">Wii U Pro Controller</string>
+    <string name="local_mac_title">What is your device\'s Blueooth MAC address?</string>
+    <string name="local_mac_instructions">To see your device\'s Bluetooth MAC address, open Android settings > About phone</string>
+    <string name="local_mac_hint">aa:bb:cc:dd:ee:ff</string>
+    <string name="local_mac_error">Please enter a valid MAC address</string>
 </resources>
