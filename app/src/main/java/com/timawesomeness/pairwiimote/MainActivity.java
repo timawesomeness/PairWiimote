@@ -46,7 +46,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             new AlertDialog.Builder(this)
                     .setTitle(R.string.no_bluetooth)
                     .setCancelable(false)
-                    .setNegativeButton(android.R.string.cancel, (d, i) ->
+                    .setPositiveButton(android.R.string.ok, (d, i) ->
                             finishAffinity())
                     .show();
         } else {
