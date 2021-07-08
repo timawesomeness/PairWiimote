@@ -30,9 +30,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
-    private BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+    private final BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
     private RecyclerView recyclerView;
-    private ArrayList<BluetoothDevice> devices = new ArrayList<>();
+    private final ArrayList<BluetoothDevice> devices = new ArrayList<>();
     private ControllerType controllerType = ControllerType.WIIMOTE;
     private String localMAC = "";
 
@@ -46,9 +46,8 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             new AlertDialog.Builder(this)
                     .setTitle(R.string.no_bluetooth)
                     .setCancelable(false)
-                    .setNegativeButton(android.R.string.cancel, (d, i) -> {
-                        finishAffinity();
-                    })
+                    .setNegativeButton(android.R.string.cancel, (d, i) ->
+                            finishAffinity())
                     .show();
         } else {
             tryLocationPermission();
@@ -122,10 +121,10 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-            tryLocationPermission();
-        } else {
+        if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             refresh();
+        } else {
+            tryLocationPermission();
         }
     }
 
@@ -170,17 +169,16 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                         .setMessage(R.string.local_mac_instructions)
                         .setView(input)
                         .setPositiveButton(android.R.string.ok, (dialogInterface, i) -> {
-                            if (!input.getText().toString().matches("[0-9a-fA-F]:{5}[0-9a-fA-F]")) {
-                                input.setError(getString(R.string.local_mac_error));
-                            } else {
+                            if (input.getText().toString().matches("[0-9a-fA-F]:{5}[0-9a-fA-F]")) {
                                 localMAC = input.getText().toString();
                                 controllerType = ControllerType.WIIUPRO;
                                 ((TextView) findViewById(R.id.instructions)).setText(R.string.wiiupro_instructions);
+                            } else {
+                                input.setError(getString(R.string.local_mac_error));
                             }
                         })
-                        .setNegativeButton(android.R.string.cancel, (dialogInterface, i) -> {
-                            dialogInterface.cancel();
-                        })
+                        .setNegativeButton(android.R.string.cancel, (dialogInterface, i) ->
+                                dialogInterface.cancel())
                         .show();
                 break;
         }
