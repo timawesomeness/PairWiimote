@@ -28,7 +28,7 @@ public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDevice
     @Override
     public BluetoothDeviceViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         return new BluetoothDeviceViewHolder(
-                LayoutInflater.from(parent.getContext()).inflate(android.R.layout.simple_list_item_2, parent, false));
+                LayoutInflater.from(parent.getContext()).inflate(R.layout.bluetooth_list, parent, false));
     }
 
     @Override
@@ -73,16 +73,17 @@ public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDevice
     }
 
     static class BluetoothDeviceViewHolder extends RecyclerView.ViewHolder {
-        TextView top;
-        TextView bottom;
+        final TextView top;
+        final TextView bottom;
 
         public BluetoothDeviceViewHolder(@NonNull View itemView) {
             super(itemView);
             TypedValue outValue = new TypedValue();
-            itemView.getContext().getTheme().resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
+            itemView.getContext().getTheme()
+                    .resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
             itemView.setBackgroundResource(outValue.resourceId);
-            top = itemView.findViewById(android.R.id.text1);
-            bottom = itemView.findViewById(android.R.id.text2);
+            top = itemView.findViewById(R.id.top);
+            bottom = itemView.findViewById(R.id.bottom);
         }
     }
 }
