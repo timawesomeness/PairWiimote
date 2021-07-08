@@ -16,7 +16,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission;
@@ -26,22 +25,25 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+
+import com.timawesomeness.pairwiimote.databinding.ActivityMainBinding;
 
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
     private final BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-    private RecyclerView recyclerView;
     private final ArrayList<BluetoothDevice> devices = new ArrayList<>();
     private ControllerType controllerType = ControllerType.WIIMOTE;
     private String localMAC = "";
+    private ActivityMainBinding binding;
+    private BluetoothDeviceAdapter deviceAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        setSupportActionBar(findViewById(R.id.toolbar));
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        setSupportActionBar(binding.toolbar);
         // if we don't have bluetooth, quit
         if (adapter == null) {
             new AlertDialog.Builder(this)
@@ -58,11 +60,12 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(enableBtIntent);
             }
 
-            recyclerView = findViewById(R.id.list);
-            recyclerView.setHasFixedSize(true);
-            recyclerView.setLayoutManager(new LinearLayoutManager(this));
-            recyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
-            recyclerView.setAdapter(new BluetoothDeviceAdapter(devices));
+            deviceAdapter = new BluetoothDeviceAdapter(devices);
+
+            binding.list.setHasFixedSize(true);
+            binding.list.setLayoutManager(new LinearLayoutManager(this));
+            binding.list.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
+            binding.list.setAdapter(deviceAdapter);
 
             IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
             registerReceiver(receiver, filter);
@@ -78,9 +81,9 @@ public class MainActivity extends AppCompatActivity {
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 devices.add(device);
-                ((BluetoothDeviceAdapter) recyclerView.getAdapter()).notifyNewItem();
+                deviceAdapter.notifyNewItem();
                 if (!adapter.isDiscovering()) {
-                    findViewById(R.id.progressBar).setVisibility(View.GONE);
+                    binding.progressBar.setVisibility(View.GONE);
                 }
             } else if (action.equals(BluetoothDevice.ACTION_PAIRING_REQUEST)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
@@ -149,7 +152,7 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case R.id.wiimote:
                 controllerType = ControllerType.WIIMOTE;
-                ((TextView) findViewById(R.id.instructions)).setText(R.string.wiimote_instructions);
+                binding.instructions.setText(R.string.wiimote_instructions);
                 break;
             case R.id.wiiupro:
                 final EditText input = new EditText(this);
@@ -172,7 +175,7 @@ public class MainActivity extends AppCompatActivity {
                             if (input.getText().toString().matches("[0-9a-fA-F]:{5}[0-9a-fA-F]")) {
                                 localMAC = input.getText().toString();
                                 controllerType = ControllerType.WIIUPRO;
-                                ((TextView) findViewById(R.id.instructions)).setText(R.string.wiiupro_instructions);
+                                binding.instructions.setText(R.string.wiiupro_instructions);
                             } else {
                                 input.setError(getString(R.string.local_mac_error));
                             }
@@ -191,8 +194,8 @@ public class MainActivity extends AppCompatActivity {
     public void refresh() {
         adapter.cancelDiscovery();
         devices.clear();
-        ((BluetoothDeviceAdapter) recyclerView.getAdapter()).notifyDataReset();
-        findViewById(R.id.progressBar).setVisibility(View.VISIBLE);
+        deviceAdapter.notifyDataReset();
+        binding.progressBar.setVisibility(View.VISIBLE);
         adapter.startDiscovery();
     }
 

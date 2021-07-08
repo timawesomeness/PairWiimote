@@ -6,12 +6,13 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.timawesomeness.pairwiimote.databinding.BluetoothListBinding;
 
 import java.util.List;
 
@@ -27,8 +28,9 @@ public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDevice
     @NonNull
     @Override
     public BluetoothDeviceViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new BluetoothDeviceViewHolder(
-                LayoutInflater.from(parent.getContext()).inflate(R.layout.bluetooth_list, parent, false));
+        final BluetoothListBinding binding =
+                BluetoothListBinding.inflate(LayoutInflater.from(parent.getContext()));
+        return new BluetoothDeviceViewHolder(binding);
     }
 
     @Override
@@ -75,15 +77,17 @@ public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDevice
     static class BluetoothDeviceViewHolder extends RecyclerView.ViewHolder {
         final TextView top;
         final TextView bottom;
+        final BluetoothListBinding _binding;
 
-        public BluetoothDeviceViewHolder(@NonNull View itemView) {
-            super(itemView);
+        public BluetoothDeviceViewHolder(final BluetoothListBinding binding) {
+            super(binding.getRoot());
+            this._binding = binding;
             TypedValue outValue = new TypedValue();
-            itemView.getContext().getTheme()
+            binding.getRoot().getContext().getTheme()
                     .resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
-            itemView.setBackgroundResource(outValue.resourceId);
-            top = itemView.findViewById(R.id.top);
-            bottom = itemView.findViewById(R.id.bottom);
+            binding.getRoot().setBackgroundResource(outValue.resourceId);
+            top = binding.top;
+            bottom = binding.bottom;
         }
     }
 }
