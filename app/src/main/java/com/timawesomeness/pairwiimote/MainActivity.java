@@ -16,53 +16,56 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts.RequestPermission;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+
+import com.timawesomeness.pairwiimote.databinding.ActivityMainBinding;
 
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
-    private BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-    private RecyclerView recyclerView;
-    private ArrayList<BluetoothDevice> devices = new ArrayList<>();
+public class MainActivity extends AppCompatActivity {
+    private final BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+    private final ArrayList<BluetoothDevice> devices = new ArrayList<>();
     private ControllerType controllerType = ControllerType.WIIMOTE;
     private String localMAC = "";
+    private ActivityMainBinding binding;
+    private BluetoothDeviceAdapter deviceAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        setSupportActionBar(findViewById(R.id.toolbar));
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        setSupportActionBar(binding.toolbar);
         // if we don't have bluetooth, quit
         if (adapter == null) {
             new AlertDialog.Builder(this)
                     .setTitle(R.string.no_bluetooth)
                     .setCancelable(false)
-                    .setNegativeButton(android.R.string.cancel, (d, i) -> {
-                        finishAffinity();
-                    })
+                    .setPositiveButton(android.R.string.ok, (d, i) ->
+                            finishAffinity())
                     .show();
         } else {
             tryLocationPermission();
 
             if (!adapter.isEnabled()) {
                 Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                startActivityForResult(enableBtIntent, 1);
+                startActivity(enableBtIntent);
             }
 
-            recyclerView = findViewById(R.id.list);
-            recyclerView.setHasFixedSize(true);
-            recyclerView.setLayoutManager(new LinearLayoutManager(this));
-            recyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
-            recyclerView.setAdapter(new BluetoothDeviceAdapter(devices));
+            deviceAdapter = new BluetoothDeviceAdapter(devices);
+
+            binding.list.setHasFixedSize(true);
+            binding.list.setLayoutManager(new LinearLayoutManager(this));
+            binding.list.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
+            binding.list.setAdapter(deviceAdapter);
 
             IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
             registerReceiver(receiver, filter);
@@ -78,9 +81,9 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 devices.add(device);
-                ((BluetoothDeviceAdapter) recyclerView.getAdapter()).notifyNewItem();
+                deviceAdapter.notifyNewItem();
                 if (!adapter.isDiscovering()) {
-                    findViewById(R.id.progressBar).setVisibility(View.GONE);
+                    binding.progressBar.setVisibility(View.GONE);
                 }
             } else if (action.equals(BluetoothDevice.ACTION_PAIRING_REQUEST)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
@@ -115,18 +118,18 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, 0);
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-            tryLocationPermission();
-        } else {
-            refresh();
-        }
-    }
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    refresh();
+                } else {
+                    tryLocationPermission();
+                }
+            });
 
     @Override
     protected void onDestroy() {
@@ -149,7 +152,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                 break;
             case R.id.wiimote:
                 controllerType = ControllerType.WIIMOTE;
-                ((TextView) findViewById(R.id.instructions)).setText(R.string.wiimote_instructions);
+                binding.instructions.setText(R.string.wiimote_instructions);
                 break;
             case R.id.wiiupro:
                 final EditText input = new EditText(this);
@@ -169,17 +172,16 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                         .setMessage(R.string.local_mac_instructions)
                         .setView(input)
                         .setPositiveButton(android.R.string.ok, (dialogInterface, i) -> {
-                            if (!input.getText().toString().matches("[0-9a-fA-F]:{5}[0-9a-fA-F]")) {
-                                input.setError(getString(R.string.local_mac_error));
-                            } else {
+                            if (input.getText().toString().matches("[0-9a-fA-F]:{5}[0-9a-fA-F]")) {
                                 localMAC = input.getText().toString();
                                 controllerType = ControllerType.WIIUPRO;
-                                ((TextView) findViewById(R.id.instructions)).setText(R.string.wiiupro_instructions);
+                                binding.instructions.setText(R.string.wiiupro_instructions);
+                            } else {
+                                input.setError(getString(R.string.local_mac_error));
                             }
                         })
-                        .setNegativeButton(android.R.string.cancel, (dialogInterface, i) -> {
-                            dialogInterface.cancel();
-                        })
+                        .setNegativeButton(android.R.string.cancel, (dialogInterface, i) ->
+                                dialogInterface.cancel())
                         .show();
                 break;
         }
@@ -192,8 +194,8 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     public void refresh() {
         adapter.cancelDiscovery();
         devices.clear();
-        ((BluetoothDeviceAdapter) recyclerView.getAdapter()).notifyDataReset();
-        findViewById(R.id.progressBar).setVisibility(View.VISIBLE);
+        deviceAdapter.notifyDataReset();
+        binding.progressBar.setVisibility(View.VISIBLE);
         adapter.startDiscovery();
     }
 
