@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 34
 
     defaultConfig {
         applicationId "com.timawesomeness.pairwiimote"
-        minSdkVersion 19
-        targetSdkVersion 29
+        minSdkVersion 29
+        targetSdkVersion 34
         versionCode 3
         versionName "1.1.1"
         vectorDrawables.useSupportLibrary true
@@ -19,15 +19,21 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     packagingOptions {
-        exclude 'META-INF/*'
+        jniLibs {
+            excludes += ['META-INF/*']
+        }
+        resources {
+            excludes += ['META-INF/*']
+        }
     }
     buildFeatures {
         viewBinding true
     }
+    namespace 'com.timawesomeness.pairwiimote'
 }
 
 dependencies {

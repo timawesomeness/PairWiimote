@@ -1,8 +1,10 @@
 package com.timawesomeness.pairwiimote;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -18,7 +20,7 @@ import android.view.View;
 import android.widget.EditText;
 
 import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts.RequestPermission;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -28,16 +30,18 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.timawesomeness.pairwiimote.databinding.ActivityMainBinding;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
     private final BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
     private final ArrayList<BluetoothDevice> devices = new ArrayList<>();
-    private ControllerType controllerType = ControllerType.WIIMOTE;
-    private String localMAC = "";
+    private static ControllerType controllerType = ControllerType.WIIMOTE;
+    private static String localMAC = "";
     private ActivityMainBinding binding;
     private BluetoothDeviceAdapter deviceAdapter;
 
+    @SuppressLint("MissingPermission")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,85 +56,126 @@ public class MainActivity extends AppCompatActivity {
                     .setPositiveButton(android.R.string.ok, (d, i) ->
                             finishAffinity())
                     .show();
-        } else {
-            tryLocationPermission();
-
-            if (!adapter.isEnabled()) {
-                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                startActivity(enableBtIntent);
-            }
-
-            deviceAdapter = new BluetoothDeviceAdapter(devices);
-
-            binding.list.setHasFixedSize(true);
-            binding.list.setLayoutManager(new LinearLayoutManager(this));
-            binding.list.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
-            binding.list.setAdapter(deviceAdapter);
-
-            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-            registerReceiver(receiver, filter);
-            IntentFilter filter2 = new IntentFilter(BluetoothDevice.ACTION_PAIRING_REQUEST);
-            registerReceiver(receiver, filter2);
-            adapter.startDiscovery();
         }
+
+        tryPermission();
+
+    }
+
+    @SuppressLint("MissingPermission")
+    private void startBluetoothDiscovery() {
+        if (!adapter.isEnabled()) {
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivity(enableBtIntent);
+        }
+
+        deviceAdapter = new BluetoothDeviceAdapter(devices);
+
+        binding.list.setHasFixedSize(true);
+        binding.list.setLayoutManager(new LinearLayoutManager(this));
+        binding.list.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
+        binding.list.setAdapter(deviceAdapter);
+
+        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        registerReceiver(receiver, filter);
+        IntentFilter filter2 = new IntentFilter(BluetoothDevice.ACTION_PAIRING_REQUEST);
+        registerReceiver(receiver, filter2);
+        adapter.startDiscovery();
     }
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
+        @SuppressLint("MissingPermission")
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+
+                if (device == null) {
+                    return;
+                }
+                if (device.getName() == null) {
+                    return;
+                }
+                if (!device.getName().contains("Nintendo")) {
+                    return;
+                }
                 devices.add(device);
                 deviceAdapter.notifyNewItem();
                 if (!adapter.isDiscovering()) {
                     binding.progressBar.setVisibility(View.GONE);
                 }
-            } else if (action.equals(BluetoothDevice.ACTION_PAIRING_REQUEST)) {
+            }
+            else if (action.equals(BluetoothDevice.ACTION_PAIRING_REQUEST)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                try {
-                    byte[] pin = new byte[6];
-                    for (int i = 0; i < 6; i++) {
-                        switch (controllerType) {
-                            case WIIMOTE:
-                                // Wiimote pins are the remote's bluetooth MAC address reversed
-                                // https://wiibrew.org/wiki/Wiimote#Bluetooth_Pairing
-                                pin[i] = Integer.decode("0x" + device.getAddress().split(":")[5 - i]).byteValue();
-                                break;
-                            case WIIUPRO:
-                                // Wii U Pro Controller pins seem to be the host's MAC address
-                                pin[i] = Integer.decode("0x" + localMAC.split(":")[i]).byteValue();
-                        }
-                    }
-                    device.setPin(pin);
-                    device.getClass().getMethod("setPairingConfirmation", boolean.class).invoke(device, true);
-                } catch (Exception ignored) {
-                }
+                connect2Wiimote(device);
             }
         }
     };
 
-    /**
-     * Check if we have location permissions (required for bluetooth scanning)
-     */
-    private void tryLocationPermission() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) { // if we're pre-M, permissions are granted at install-time
-            return;
-        }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+    @SuppressLint("MissingPermission")
+    public static void connect2Wiimote(BluetoothDevice device) {
+        try {
+            byte[] pin = new byte[6];
+            for (int i = 0; i < 6; i++) {
+                switch (controllerType) {
+                    case WIIMOTE:
+                        // Wiimote pins are the remote's bluetooth MAC address reversed
+                        // https://wiibrew.org/wiki/Wiimote#Bluetooth_Pairing
+                        pin[i] = Integer.decode("0x" + device.getAddress().split(":")[5 - i]).byteValue();
+                        break;
+                    case WIIUPRO:
+                        // Wii U Pro Controller pins seem to be the host's MAC address
+                        pin[i] = Integer.decode("0x" + localMAC.split(":")[i]).byteValue();
+                }
+            }
+            device.setPin(pin);
+        } catch (Exception ignored) {
+            ignored.printStackTrace();
         }
     }
 
-    private final ActivityResultLauncher<String> requestPermissionLauncher =
-            registerForActivityResult(new RequestPermission(), isGranted -> {
-                if (isGranted) {
-                    refresh();
-                } else {
-                    tryLocationPermission();
-                }
+    /**
+     * Check if we have location permissions (required for bluetooth scanning)
+     */
+    private void tryPermission() {
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
+            checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
+            checkSelfPermission(Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED ||
+            checkSelfPermission(Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED ||
+            checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED ||
+            checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED
+        ) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                requestPermissionLauncher.launch(new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.BLUETOOTH,
+                        Manifest.permission.BLUETOOTH_ADMIN,
+                        Manifest.permission.BLUETOOTH_CONNECT,
+                        Manifest.permission.BLUETOOTH_SCAN
+                });
+            }
+            else {
+                requestPermissionLauncher.launch(new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.BLUETOOTH,
+                        Manifest.permission.BLUETOOTH_ADMIN
+                });
+            }
+        }
+        else {
+            //all granted
+            startBluetoothDiscovery();
+        }
+    }
+
+    private final ActivityResultLauncher<String[]> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
+                tryPermission();
             });
 
+    @SuppressLint("MissingPermission")
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -191,6 +236,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Refresh bluetooth devices
      */
+    @SuppressLint("MissingPermission")
     public void refresh() {
         adapter.cancelDiscovery();
         devices.clear();

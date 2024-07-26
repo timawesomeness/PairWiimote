@@ -1,5 +1,6 @@
 package com.timawesomeness.pairwiimote;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.graphics.Color;
@@ -14,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.timawesomeness.pairwiimote.databinding.BluetoothListBinding;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDeviceAdapter.BluetoothDeviceViewHolder> {
@@ -28,11 +30,11 @@ public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDevice
     @NonNull
     @Override
     public BluetoothDeviceViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        final BluetoothListBinding binding =
-                BluetoothListBinding.inflate(LayoutInflater.from(parent.getContext()));
+        final BluetoothListBinding binding = BluetoothListBinding.inflate(LayoutInflater.from(parent.getContext()));
         return new BluetoothDeviceViewHolder(binding);
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     public void onBindViewHolder(@NonNull BluetoothDeviceViewHolder holder, int position) {
         BluetoothDevice device = data.get(position);
@@ -42,7 +44,15 @@ public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDevice
         holder.bottom.setText(device.getAddress());
         holder.itemView.setOnClickListener(view -> {
             BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
-            device.createBond();
+
+
+            if (device.getBondState() == BluetoothDevice.BOND_BONDED) {
+                removeBond(device);
+                MainActivity.connect2Wiimote(device);
+            }
+            else {
+                device.createBond();
+            }
         });
         if (device.getName() != null && device.getName().contains("Nintendo RVL-")) {
             holder.top.setTextColor(Color.rgb(0, 191, 0));
@@ -50,6 +60,14 @@ public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDevice
         } else {
             holder.top.setTextColor(holder.bottom.getTextColors());
             holder.top.setTypeface(null, Typeface.NORMAL);
+        }
+    }
+    private void removeBond(BluetoothDevice device) {
+        try {
+            Method removeBondMethod = device.getClass().getMethod("removeBond");
+            removeBondMethod.invoke(device);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
