@@ -1,18 +1,21 @@
 package com.timawesomeness.pairwiimote;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.timawesomeness.pairwiimote.databinding.BluetoothListBinding;
+
+import java.lang.reflect.Method;
 import java.util.List;
 
 public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDeviceAdapter.BluetoothDeviceViewHolder> {
@@ -27,10 +30,11 @@ public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDevice
     @NonNull
     @Override
     public BluetoothDeviceViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new BluetoothDeviceViewHolder(
-                LayoutInflater.from(parent.getContext()).inflate(android.R.layout.simple_list_item_2, parent, false));
+        final BluetoothListBinding binding = BluetoothListBinding.inflate(LayoutInflater.from(parent.getContext()));
+        return new BluetoothDeviceViewHolder(binding);
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     public void onBindViewHolder(@NonNull BluetoothDeviceViewHolder holder, int position) {
         BluetoothDevice device = data.get(position);
@@ -40,7 +44,15 @@ public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDevice
         holder.bottom.setText(device.getAddress());
         holder.itemView.setOnClickListener(view -> {
             BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
-            device.createBond();
+
+
+            if (device.getBondState() == BluetoothDevice.BOND_BONDED) {
+                removeBond(device);
+                MainActivity.connect2Wiimote(device);
+            }
+            else {
+                device.createBond();
+            }
         });
         if (device.getName() != null && device.getName().contains("Nintendo RVL-")) {
             holder.top.setTextColor(Color.rgb(0, 191, 0));
@@ -48,6 +60,14 @@ public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDevice
         } else {
             holder.top.setTextColor(holder.bottom.getTextColors());
             holder.top.setTypeface(null, Typeface.NORMAL);
+        }
+    }
+    private void removeBond(BluetoothDevice device) {
+        try {
+            Method removeBondMethod = device.getClass().getMethod("removeBond");
+            removeBondMethod.invoke(device);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -73,16 +93,19 @@ public class BluetoothDeviceAdapter extends RecyclerView.Adapter<BluetoothDevice
     }
 
     static class BluetoothDeviceViewHolder extends RecyclerView.ViewHolder {
-        TextView top;
-        TextView bottom;
+        final TextView top;
+        final TextView bottom;
+        final BluetoothListBinding _binding;
 
-        public BluetoothDeviceViewHolder(@NonNull View itemView) {
-            super(itemView);
+        public BluetoothDeviceViewHolder(final BluetoothListBinding binding) {
+            super(binding.getRoot());
+            this._binding = binding;
             TypedValue outValue = new TypedValue();
-            itemView.getContext().getTheme().resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
-            itemView.setBackgroundResource(outValue.resourceId);
-            top = itemView.findViewById(android.R.id.text1);
-            bottom = itemView.findViewById(android.R.id.text2);
+            binding.getRoot().getContext().getTheme()
+                    .resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
+            binding.getRoot().setBackgroundResource(outValue.resourceId);
+            top = binding.top;
+            bottom = binding.bottom;
         }
     }
 }
